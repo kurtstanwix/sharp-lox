@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpLox", "SharpLox.csproj", "{51913E74-4F4B-4D19-800B-EF9A80C7B962}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExprBuilder", "ExprBuilder\ExprBuilder.csproj", "{70D4CA35-A20F-43A4-BBE1-DCCAC8270E5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{51913E74-4F4B-4D19-800B-EF9A80C7B962}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51913E74-4F4B-4D19-800B-EF9A80C7B962}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51913E74-4F4B-4D19-800B-EF9A80C7B962}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70D4CA35-A20F-43A4-BBE1-DCCAC8270E5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70D4CA35-A20F-43A4-BBE1-DCCAC8270E5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70D4CA35-A20F-43A4-BBE1-DCCAC8270E5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70D4CA35-A20F-43A4-BBE1-DCCAC8270E5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
