@@ -11,17 +11,54 @@ class Program
     static void Main(string[] args)
     {
         if (args.Length < 1) {
-            Console.Error.WriteLine("Usage: generate_ast <output directory> <tokens namespace>");
+            Console.Error.WriteLine("Usage: generate_ast -o <output directory> -t <tokens namespace>");
             Environment.Exit(64);
         }
-        var outputDir = args[0];
-        var namespaces = args.Skip(1);
-        DefineAst(outputDir, "Expr", namespaces, new()
+        var curr = 0;
+        var i = 0;
+        var outputDirIndices = new List<int?>();
+        while ((i = Array.IndexOf(args, "-o", curr)) != -1)
         {
-            $"Binary   : IExpr Left, Token Operator, IExpr Right",
-            $"Grouping : IExpr Expression",
-            $"Literal  : object Value",
-            $"Unary    : Token Operator, IExpr Right"
+            outputDirIndices.Add(i);
+            curr = i + 1;
+        }
+        var outputDir = outputDirIndices.Select(i => args[i.Value + 1]).ToList();
+
+        curr = 0;
+        var namespaceIndices = new List<int?>();
+        while ((i = Array.IndexOf(args, "-t", curr)) != -1)
+        {
+            namespaceIndices.Add(i);
+            curr = i + 1;
+        }
+
+        var namespaces = namespaceIndices.Select(i =>
+        {
+            var nextDirIndex = outputDirIndices.FirstOrDefault(oi => oi > i);
+            var nextNamespaceIndex = namespaceIndices.FirstOrDefault(ni => ni > i);
+            int endIndex;
+            if (nextDirIndex.HasValue && nextNamespaceIndex.HasValue)
+                endIndex = Math.Min(nextDirIndex.Value, nextNamespaceIndex.Value);
+            else if (nextDirIndex.HasValue) endIndex = nextDirIndex.Value;
+            else if (nextNamespaceIndex.HasValue) endIndex = nextNamespaceIndex.Value;
+            else endIndex = args.Length;
+            return args.Skip(i.Value + 1).Take((int) (endIndex - i - 1));
+        }).ToList();
+        DefineAst(outputDir.ElementAt(0), "Expr", namespaces.ElementAtOrDefault(0), new()
+        {
+            "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
+            "Binary   : IExpr Left, Token Operator, IExpr Right",
+            "Grouping : IExpr Expression",
+            "Literal  : object Value",
+            "Unary    : Token Operator, IExpr Right",
+            "Variable : Token Name"
+        });
+        
+        DefineAst(outputDir.ElementAt(1), "Stmt", namespaces.ElementAtOrDefault(1), new()
+        {
+            "Var        : Token Name, IExpr? Initialiser",
+            "Expression : IExpr ExpressionValue",
+            "Print      : IExpr Expression",
         });
     }
 
@@ -86,10 +123,14 @@ class Program
         var folderName = Path.GetFileName(dir);
         var rootName = Path.GetFileName(Path.GetFullPath(Path.Combine(dir, "..")));
         var writer = new StreamWriter(File.Open(filePath, FileMode.Create), Encoding.UTF8);
-        foreach (var usingNamespace in namespaces)
+        if (namespaces is not null)
         {
-            writer.WriteLine($"using {usingNamespace};");
+            foreach (var usingNamespace in namespaces)
+            {
+                writer.WriteLine($"using {usingNamespace};");
+            }
         }
+
         writer.WriteLine($"using {rootName}.{folderName}.Visitors;");
         writer.WriteLine();
         writer.WriteLine($"namespace {rootName}.{folderName};");

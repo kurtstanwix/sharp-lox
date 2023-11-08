@@ -3,6 +3,20 @@ using SharpLox.Expression.Visitors;
 
 namespace SharpLox.Expression;
 
+public class Ternary : IExpr
+{
+    public IExpr Left { get; set; }
+    public Token LeftOperator { get; set; }
+    public IExpr Middle { get; set; }
+    public Token RightOperator { get; set; }
+    public IExpr Right { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitTernaryExpr(this);
+    }
+}
+
 public class Binary : IExpr
 {
     public IExpr Left { get; set; }
@@ -46,3 +60,12 @@ public class Unary : IExpr
     }
 }
 
+public class Variable : IExpr
+{
+    public Token Name { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitVariableExpr(this);
+    }
+}

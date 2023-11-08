@@ -1,4 +1,5 @@
 ﻿using SharpLox.Expression;
+using SharpLox.Statement;
 using SharpLox.Tokens;
 
 namespace SharpLox;
@@ -15,16 +16,61 @@ public class Parser
         _tokens = tokens;
     }
 
-    public IExpr? Parse()
+    public IEnumerable<IStmt>? Parse()
+    {
+        var statements = new List<IStmt>();
+        while (!IsAtEnd())
+        {
+            statements.Add(Declaration());
+        }
+
+        return statements;
+    }
+
+    private IStmt Declaration()
     {
         try
         {
-            return Expression();
+            if (Match(TokenType.Var)) return VarDeclaration();
+            return Statement();
         }
-        catch (ParseError error)
+        catch (ParseError)
         {
+            Synchronise();
             return null;
         }
+    }
+
+    private IStmt VarDeclaration()
+    {
+        var name = Consume(TokenType.Identifier, "Expect variable name.");
+        var decl = new Var { Name = name};
+        if (Match(TokenType.Equal))
+        {
+            decl.Initialiser = Expression();
+        }
+        Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
+        return decl;
+    }
+
+    private IStmt Statement()
+    {
+        if (Match(TokenType.Print)) return PrintStatement();
+        return ExpressionStatement();
+    }
+
+    private IStmt PrintStatement()
+    {
+        var expr = Expression();
+        Consume(TokenType.Semicolon, "Expect ';' after value.");
+        return new Print { Expression = expr };
+    }
+
+    private IStmt ExpressionStatement()
+    {
+        var expr = Expression();
+        Consume(TokenType.Semicolon, "Expect ';' after value.");
+        return new Statement.Expression { ExpressionValue = expr };
     }
 
     private IExpr Expression()
@@ -50,8 +96,8 @@ public class Parser
             var left = Equality();
             var orOp = Consume(TokenType.Colon, "Ternary expression must have false case");
             var right = Ternary();
-            expr = new Binary
-                { Left = expr, Operator = condOp, Right = new Binary { Left = left, Operator = orOp, Right = right } };
+            expr = new Ternary
+                { Left = expr, LeftOperator = condOp, Middle = left, RightOperator = orOp, Right = right };
         }
 
         return expr;
@@ -140,6 +186,8 @@ public class Parser
             Consume(TokenType.RightParen, "Expect ')' after expression");
             return new Grouping { Expression = expr };
         }
+
+        if (Match(TokenType.Identifier)) return new Variable { Name = Previous() };
 
         throw Error(Peek(), "Expect expression.");
     }

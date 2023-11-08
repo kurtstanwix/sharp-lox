@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using SharpLox.Errors;
 using SharpLox.Expression.Visitors;
 using SharpLox.Tokens;
 
@@ -7,7 +8,9 @@ namespace SharpLox;
 
 class Program
 {
-    private static bool HadError = false;
+    private static readonly Interpreter _interpreter = new Interpreter();
+    private static bool _hadError = false;
+    private static bool _hadRuntimeError = false;
     
     static int Main(string[] args)
     {
@@ -55,7 +58,8 @@ class Program
         var fileContents = File.ReadAllText(Path.GetFullPath(path));
         Run(fileContents);
 
-        if (HadError) return 65;
+        if (_hadError) return 65;
+        if (_hadRuntimeError) return 70;
         
         return 0;
     }
@@ -68,7 +72,7 @@ class Program
             var line = Console.ReadLine();
             if (line is null) break;
             Run(line);
-            HadError = false;
+            _hadError = false;
         }
 
         return 0;
@@ -79,11 +83,18 @@ class Program
         var scanner = new Scanner(source);
         var tokens = scanner.ScanTokens();
         var parser = new Parser(tokens);
-        var expr = parser.Parse();
+        var statements = parser.Parse()?.ToList();
 
-        if (HadError || expr is null) return;
+        if (_hadError || statements is null) return;
 
-        Console.WriteLine(new AstPrinter().Print(expr));
+        Console.WriteLine(new AstPrinter().Print(statements));
+        _interpreter.Interpret(statements);
+    }
+
+    public static void RuntimeError(RuntimeError e)
+    {
+        Console.Error.WriteLine($"{e.Message}\n[line {e.Token.Line}]");
+        _hadRuntimeError = true;
     }
     
     public static void Error(Token token, string message)
@@ -106,6 +117,6 @@ class Program
     private static void Report(int line, string where, string message)
     {
         Console.Error.WriteLine($"[line {line}] Error{where}: {message}");
-        HadError = true;
+        _hadError = true;
     }
 }
