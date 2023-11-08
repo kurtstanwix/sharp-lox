@@ -76,11 +76,17 @@ public class Scanner
             case '+':
                 AddToken(TokenType.Plus);
                 break;
+            case ':':
+                AddToken(TokenType.Colon);
+                break;
             case ';':
                 AddToken(TokenType.Semicolon);
                 break;
             case '*':
                 AddToken(TokenType.Star);
+                break;
+            case '?':
+                AddToken(TokenType.Question);
                 break;
             case '!':
                 AddToken(Match('=') ? TokenType.BangEqual : TokenType.Bang);
