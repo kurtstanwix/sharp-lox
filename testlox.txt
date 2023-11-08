@@ -1,0 +1,5 @@
+﻿print("test");
+print 1==0?"Hey":9;
+print true;
+var test = "HELOO";
+print test;
