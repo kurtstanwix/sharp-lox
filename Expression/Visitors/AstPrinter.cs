@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
@@ -35,6 +36,12 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
     }
+    
+    public string VisitCallExpr(Call expr)
+    {
+        return
+            $"call {expr.Callee.Accept(this)} ({string.Join(", ", expr.Arguments.Select(arg => arg.Accept(this)))})";
+    }
 
     public string VisitGroupingExpr(Grouping expr)
     {
@@ -64,23 +71,7 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
 
     public string VisitBlockStmt(Block stmt)
     {
-        var sb = new StringBuilder();
-        try
-        {
-            sb.Append(Prepend("{\n"));
-            _level++;
-            foreach (var statement in stmt.Statements)
-            {
-                var stmtText = statement.Accept(this);
-                if (statement is not Block) stmtText = Prepend(stmtText);
-                sb.Append(stmtText);
-            }
-        }
-        finally
-        {
-            _level--;
-            sb.Append(Prepend("}\n"));
-        }
+        var sb = PrintBlock(stmt.Statements, new StringBuilder());
 
         return sb.ToString();
     }
@@ -116,6 +107,20 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return sb.ToString();
     }
 
+    public string VisitFunctionStmt(Function stmt)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"fun {stmt.Name.Lexeme} ({string.Join(", ", stmt.Params.Select(t => t.Lexeme))})\n");
+        sb = PrintBlock(stmt.Body, sb);
+
+        return sb.ToString();
+    }
+
+    public string VisitReturnStmt(Return stmt)
+    {
+        return $"{stmt.Keyword.Lexeme}{(stmt.Value is null ? "" : $" {stmt.Value?.Accept(this)}")};\n";
+    }
+
     public string VisitWhileStmt(While stmt)
     {
         var sb = new StringBuilder();
@@ -146,6 +151,28 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
     public string VisitPrintStmt(Print stmt)
     {
         return $"PRINT( {stmt.Expression.Accept(this)} );\n";
+    }
+
+    private StringBuilder PrintBlock(IEnumerable<IStmt> statements, StringBuilder sb)
+    {
+        try
+        {
+            sb.Append(Prepend("{\n"));
+            _level++;
+            foreach (var statement in statements)
+            {
+                var stmtText = statement.Accept(this);
+                if (statement is not Block) stmtText = Prepend(stmtText);
+                sb.Append(stmtText);
+            }
+        }
+        finally
+        {
+            _level--;
+            sb.Append(Prepend("}\n"));
+        }
+
+        return sb;
     }
 
     private string Parenthesize(string name, params object[] values)

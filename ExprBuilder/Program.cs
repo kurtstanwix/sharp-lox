@@ -48,6 +48,7 @@ class Program
         {
             "Assign   : Token Name, IExpr Value",
             "Binary   : IExpr Left, Token Operator, IExpr Right",
+            "Call     : IExpr Callee, Token Paren, IEnumerable<IExpr> Arguments",
             "Grouping : IExpr Expression",
             "Literal  : object Value",
             "Logical  : IExpr Left, Token Operator, IExpr Right",
@@ -60,9 +61,11 @@ class Program
         {
             "Block      : IEnumerable<IStmt> Statements",
             "Expression : IExpr ExpressionValue",
+            "Function   : Token Name, IEnumerable<Token> Params, IEnumerable<IStmt> Body",
             "If         : IExpr Condition, IStmt ThenBranch, IStmt? ElseBranch",
             // "Keyword    : Token Name",
             "Print      : IExpr Expression",
+            "Return     : Token Keyword, IExpr? Value",
             "Var        : Token Name, IExpr? Initialiser",
             "While      : IExpr Condition, IStmt Body",
         });

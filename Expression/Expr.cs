@@ -1,4 +1,5 @@
-﻿using SharpLox.Tokens;
+﻿using System.Collections.Generic;
+using SharpLox.Tokens;
 using SharpLox.Expression.Visitors;
 
 namespace SharpLox.Expression;
@@ -23,6 +24,18 @@ public class Binary : IExpr
     public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
     {
         return visitor.VisitBinaryExpr(this);
+    }
+}
+
+public class Call : IExpr
+{
+    public IExpr Callee { get; set; }
+    public Token Paren { get; set; }
+    public IEnumerable<IExpr> Arguments { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitCallExpr(this);
     }
 }
 

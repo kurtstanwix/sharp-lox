@@ -25,6 +25,18 @@ public class Expression : IStmt
     }
 }
 
+public class Function : IStmt
+{
+    public Token Name { get; set; }
+    public IEnumerable<Token> Params { get; set; }
+    public IEnumerable<IStmt> Body { get; set; }
+
+    public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
+    {
+        return visitor.VisitFunctionStmt(this);
+    }
+}
+
 public class If : IStmt
 {
     public IExpr Condition { get; set; }
@@ -44,6 +56,17 @@ public class Print : IStmt
     public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
     {
         return visitor.VisitPrintStmt(this);
+    }
+}
+
+public class Return : IStmt
+{
+    public Token Keyword { get; set; }
+    public IExpr? Value { get; set; }
+
+    public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
+    {
+        return visitor.VisitReturnStmt(this);
     }
 }
 

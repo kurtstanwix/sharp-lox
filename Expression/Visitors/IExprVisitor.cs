@@ -4,6 +4,7 @@ public interface IExprVisitor<TReturn>
 {
     TReturn VisitAssignExpr(Assign expr);
     TReturn VisitBinaryExpr(Binary expr);
+    TReturn VisitCallExpr(Call expr);
     TReturn VisitGroupingExpr(Grouping expr);
     TReturn VisitLiteralExpr(Literal expr);
     TReturn VisitLogicalExpr(Logical expr);

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using SharpLox.Callable;
 using SharpLox.Errors;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
@@ -9,7 +11,16 @@ namespace SharpLox.Expression.Visitors;
 
 public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 {
-    private Environment _environment = new();
+    private readonly Environment _globals = new();
+    public Environment Globals => _globals;
+    private Environment _environment;
+
+    public Interpreter()
+    {
+        _environment = _globals;
+        _globals.Define("clock", new Clock());
+    }
+    
     public void Interpret(IEnumerable<IStmt> statements)
     {
         try
@@ -106,6 +117,19 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
+    public object? VisitCallExpr(Call expr)
+    {
+        var callee = Evaluate(expr.Callee);
+
+        var arguments = expr.Arguments.Select(Evaluate).ToList();
+
+        if (callee is not ISharpLoxCallable function)
+            throw new RuntimeError(expr.Paren, "Can only call functions and classes.");
+        if (arguments.Count != function.Arity)
+            throw new RuntimeError(expr.Paren, $"Expected {function.Arity} arguments but got {arguments.Count}.");
+        return function.Call(this, arguments);
+    }
+
     public object? VisitGroupingExpr(Grouping expr)
     {
         return Evaluate(expr.Expression);
@@ -163,6 +187,19 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
+    public object? VisitFunctionStmt(Function stmt)
+    {
+        var function = new SharpLoxFunction(stmt, _environment);
+        _environment.Define(stmt.Name.Lexeme, function);
+        return null;
+    }
+
+    public object? VisitReturnStmt(Statement.Return stmt)
+    {
+        var value = Evaluate(stmt.Value);
+        throw new Callable.Return(value);
+    }
+
     public object? VisitWhileStmt(While stmt)
     {
         while (IsTruthy(Evaluate(stmt.Condition)))
@@ -190,7 +227,7 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
-    private void ExecuteBlock(IEnumerable<IStmt> statements, Environment environment)
+    public void ExecuteBlock(IEnumerable<IStmt> statements, Environment environment)
     {
         var previousEnv = _environment;
         try
