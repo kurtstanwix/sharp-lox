@@ -81,7 +81,7 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
                 }
                 if (left is string || right is string)
                 {
-                    return left?.ToString() + right;
+                    return Stringify(left) + Stringify(right);
                 }
 
                 throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
@@ -115,6 +115,21 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     {
         return expr.Value;
     }
+    
+    public object? VisitLogicalExpr(Logical expr)
+    {
+        var left = Evaluate(expr.Left);
+        if (expr.Operator.Type == TokenType.And)
+        {
+            if (!IsTruthy(left)) return left;
+        }
+        else
+        {
+            if (IsTruthy(left)) return left;
+        }
+
+        return Evaluate(expr.Right);
+    }
 
     public object? VisitUnaryExpr(Unary expr)
     {
@@ -145,6 +160,13 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     {
         var condition = IsTruthy(Evaluate(stmt.Condition));
         Execute(condition ? stmt.ThenBranch : stmt.ElseBranch);
+        return null;
+    }
+
+    public object? VisitWhileStmt(While stmt)
+    {
+        while (IsTruthy(Evaluate(stmt.Condition)))
+            Execute(stmt.Body);
         return null;
     }
 
@@ -186,9 +208,9 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 
     }
 
-    private object? Evaluate(IExpr expr)
+    private object? Evaluate(IExpr? expr)
     {
-        return expr.Accept(this);
+        return expr?.Accept(this);
     }
 
     private void Execute(IStmt? stmt)

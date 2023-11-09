@@ -50,6 +50,7 @@ class Program
             "Binary   : IExpr Left, Token Operator, IExpr Right",
             "Grouping : IExpr Expression",
             "Literal  : object Value",
+            "Logical  : IExpr Left, Token Operator, IExpr Right",
             "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
             "Unary    : Token Operator, IExpr Right",
             "Variable : Token Name",
@@ -60,8 +61,10 @@ class Program
             "Block      : IEnumerable<IStmt> Statements",
             "Expression : IExpr ExpressionValue",
             "If         : IExpr Condition, IStmt ThenBranch, IStmt? ElseBranch",
+            // "Keyword    : Token Name",
             "Print      : IExpr Expression",
             "Var        : Token Name, IExpr? Initialiser",
+            "While      : IExpr Condition, IStmt Body",
         });
     }
 

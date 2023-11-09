@@ -46,6 +46,11 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         if (expr.Value is null) return "nil";
         return expr.Value.ToString();
     }
+    
+    public string VisitLogicalExpr(Logical expr)
+    {
+        return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
+    }
 
     public string VisitUnaryExpr(Unary expr)
     {
@@ -62,11 +67,13 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         var sb = new StringBuilder();
         try
         {
-            sb.Append(("{\n"));
+            sb.Append(Prepend("{\n"));
             _level++;
             foreach (var statement in stmt.Statements)
             {
-                sb.Append(Prepend(statement.Accept(this)));
+                var stmtText = statement.Accept(this);
+                if (statement is not Block) stmtText = Prepend(stmtText);
+                sb.Append(stmtText);
             }
         }
         finally
@@ -109,6 +116,23 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return sb.ToString();
     }
 
+    public string VisitWhileStmt(While stmt)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"while ({stmt.Condition.Accept(this)})\n");
+        var body = stmt.Body.Accept(this);
+        if (stmt.Body is not Block)
+        {
+            _level++;
+            body = Prepend(body);
+            _level--;
+        }
+
+        sb.Append(body);
+
+        return sb.ToString();
+    }
+
     public string VisitVarStmt(Var stmt)
     {
         return $"var {stmt.Name.Lexeme}{(stmt.Initialiser is not null ? $" = {stmt.Initialiser.Accept(this)}" : "")};\n";
@@ -134,7 +158,7 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
             builder.Append(" ");
             var val = value is IExpr exprValue ? exprValue.Accept(this) :
                 value is Token tokenValue ? tokenValue.Lexeme : value;
-            builder.Append(value);
+            builder.Append(val);
         }
 
         builder.Append(")");

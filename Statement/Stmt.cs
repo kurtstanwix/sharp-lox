@@ -58,3 +58,14 @@ public class Var : IStmt
     }
 }
 
+public class While : IStmt
+{
+    public IExpr Condition { get; set; }
+    public IStmt Body { get; set; }
+
+    public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
+    {
+        return visitor.VisitWhileStmt(this);
+    }
+}
+

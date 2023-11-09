@@ -46,6 +46,18 @@ public class Literal : IExpr
     }
 }
 
+public class Logical : IExpr
+{
+    public IExpr Left { get; set; }
+    public Token Operator { get; set; }
+    public IExpr Right { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitLogicalExpr(this);
+    }
+}
+
 public class Ternary : IExpr
 {
     public IExpr Left { get; set; }

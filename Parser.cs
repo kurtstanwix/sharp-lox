@@ -61,6 +61,8 @@ public class Parser
         if (Match(TokenType.Print)) return Print();
         if (Match(TokenType.LeftBrace)) return new Block { Statements = Block() };
         if (Match(TokenType.If)) return If();
+        if (Match(TokenType.While)) return While();
+        if (Match(TokenType.For)) return For();
         return ExpressionStatement();
     }
 
@@ -93,6 +95,43 @@ public class Parser
         return new If { Condition = condition, ThenBranch = thenBranch, ElseBranch = elseBranch };
     }
 
+    private IStmt While()
+    {
+        Consume(TokenType.LeftParen, "Expect '(' after 'while'.");
+        var condition = Expression();
+        Consume(TokenType.RightParen, "Expect ')' after while condition.");
+        var body = Statement();
+        return new While { Condition = condition, Body = body };
+    }
+
+    private IStmt For()
+    {
+        Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
+        var initialiser = Match(TokenType.Semicolon) ? null :
+            Match(TokenType.Var) ? VarDeclaration() : ExpressionStatement();
+        var condition = !Check(TokenType.Semicolon) ? Expression() : null;
+        Consume(TokenType.Semicolon, "Expect ';' after loop condition.");
+        var increment = !Check(TokenType.RightParen) ? Expression() : null;
+        Consume(TokenType.RightParen, "Expect ')' after for clauses.");
+        var body = Statement();
+        
+        if (increment is not null)
+        {
+            body = new Block
+                { Statements = new List<IStmt> { body, new Statement.Expression { ExpressionValue = increment } } };
+        }
+
+        if (condition is null) condition = new Literal { Value = true };
+        body = new While { Condition = condition, Body = body };
+        
+        if (initialiser is not null)
+        {
+            body = new Block
+                { Statements = new List<IStmt> { initialiser, body } };
+        }
+        return body;
+    }
+
     private IStmt ExpressionStatement()
     {
         var expr = Expression();
@@ -102,12 +141,17 @@ public class Parser
 
     private IExpr Expression()
     {
+        return Comma();
+    }
+
+    private IExpr Comma()
+    {
         var expr = TernaryOrAssignment();
 
-        if (Match(TokenType.Comma))
+        while (Match(TokenType.Comma))
         {
             var comma = Previous();
-            var right = Expression();
+            var right = TernaryOrAssignment();
             expr = new Binary { Left = expr, Operator = comma, Right = right };
         }
         return expr;
@@ -115,7 +159,7 @@ public class Parser
 
     private IExpr TernaryOrAssignment()
     {
-        var expr = Equality();
+        var expr = Or();
 
         if (Match(TokenType.Question))
         {
@@ -136,6 +180,34 @@ public class Parser
             }
 
             Error(op, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    private IExpr Or()
+    {
+        var expr = And();
+
+        while (Match(TokenType.Or))
+        {
+            var op = Previous();
+            var right = And();
+            expr = new Logical { Left = expr, Operator = op, Right = right };
+        }
+
+        return expr;
+    }
+
+    private IExpr And()
+    {
+        var expr = Equality();
+
+        while (Match(TokenType.And))
+        {
+            var op = Previous();
+            var right = Equality();
+            expr = new Logical { Left = expr, Operator = op, Right = right };
         }
 
         return expr;
