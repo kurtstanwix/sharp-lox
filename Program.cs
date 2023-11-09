@@ -2,8 +2,8 @@
 using System.IO;
 using System.Linq;
 using SharpLox.Errors;
-using SharpLox.Expression.Visitors;
 using SharpLox.Tokens;
+using SharpLox.Visitors;
 
 namespace SharpLox;
 

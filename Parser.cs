@@ -34,7 +34,11 @@ public class Parser
     {
         try
         {
-            if (Match(TokenType.Fun)) return Function("function");
+            if (Check(TokenType.Fun) && CheckNext(TokenType.Identifier))
+            {
+                Consume(TokenType.Fun, "");
+                return Function("function");
+            }
             if (Match(TokenType.Var)) return VarDeclaration();
             return Statement();
         }
@@ -44,29 +48,11 @@ public class Parser
             return null;
         }
     }
-    
-    private IStmt Function(string kind)
+
+    private Statement.Function Function(string kind)
     {
         var name = Consume(TokenType.Identifier, $"Expect {kind} name.");
-        Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
-        var parameters = new List<Token>();
-        if (!Check(TokenType.RightParen))
-        {
-            if (parameters.Count >= 255)
-            {
-                Error(Peek(), "Can't have more than 255 arguments.");
-            }
-
-            do
-            {
-                parameters.Add(Consume(TokenType.Identifier, "Expect parameter name."));
-            } while (Match(TokenType.Comma));
-        }
-        Consume(TokenType.RightParen, "Expect ')' after parameters.");
-        
-        Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
-        var body = Block();
-        return new Function {Name = name, Params = parameters, Body = body };
+        return new Statement.Function { Name = name, FunctionExpr = FunctionBody(kind) };
     }
 
     private IStmt VarDeclaration()
@@ -364,9 +350,34 @@ public class Parser
             return new Grouping { Expression = expr };
         }
 
+        if (Match(TokenType.Fun)) return FunctionBody("function");
+
         if (Match(TokenType.Identifier)) return new Variable { Name = Previous() };
 
         throw Error(Peek(), "Expect expression.");
+    }
+    
+    private Expression.Function FunctionBody(string kind)
+    {
+        Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
+        var parameters = new List<Token>();
+        if (!Check(TokenType.RightParen))
+        {
+            if (parameters.Count >= 255)
+            {
+                Error(Peek(), "Can't have more than 255 arguments.");
+            }
+
+            do
+            {
+                parameters.Add(Consume(TokenType.Identifier, "Expect parameter name."));
+            } while (Match(TokenType.Comma));
+        }
+        Consume(TokenType.RightParen, "Expect ')' after parameters.");
+        
+        Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
+        var body = Block();
+        return new Expression.Function { Params = parameters, Body = body };
     }
 
     private Token Consume(TokenType type, string errMessage)
@@ -420,6 +431,12 @@ public class Parser
     {
         if (IsAtEnd()) return false;
         return type == _tokens.ElementAt(_current).Type;
+    }
+    
+    private bool CheckNext(TokenType type) {
+        if (IsAtEnd()) return false;
+        if (_tokens.ElementAt(_current + 1).Type == TokenType.Eof) return false;
+        return _tokens.ElementAt(_current + 1).Type == type;
     }
 
     private Token Advance()

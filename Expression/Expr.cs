@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpLox.Statement;
 using SharpLox.Tokens;
 using SharpLox.Expression.Visitors;
 
@@ -36,6 +37,17 @@ public class Call : IExpr
     public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
     {
         return visitor.VisitCallExpr(this);
+    }
+}
+
+public class Function : IExpr
+{
+    public IEnumerable<Token> Params { get; set; }
+    public IEnumerable<IStmt> Body { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitFunctionExpr(this);
     }
 }
 

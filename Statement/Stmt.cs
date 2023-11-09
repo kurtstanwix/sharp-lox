@@ -28,8 +28,7 @@ public class Expression : IStmt
 public class Function : IStmt
 {
     public Token Name { get; set; }
-    public IEnumerable<Token> Params { get; set; }
-    public IEnumerable<IStmt> Body { get; set; }
+    public SharpLox.Expression.Function FunctionExpr { get; set; }
 
     public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
     {

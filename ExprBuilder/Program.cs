@@ -49,6 +49,7 @@ class Program
             "Assign   : Token Name, IExpr Value",
             "Binary   : IExpr Left, Token Operator, IExpr Right",
             "Call     : IExpr Callee, Token Paren, IEnumerable<IExpr> Arguments",
+            "Function : IEnumerable<Token> Params, IEnumerable<IStmt> Body",
             "Grouping : IExpr Expression",
             "Literal  : object Value",
             "Logical  : IExpr Left, Token Operator, IExpr Right",
@@ -61,7 +62,7 @@ class Program
         {
             "Block      : IEnumerable<IStmt> Statements",
             "Expression : IExpr ExpressionValue",
-            "Function   : Token Name, IEnumerable<Token> Params, IEnumerable<IStmt> Body",
+           $"Function   : Token Name, {GetBaseNamespace(outputDir.ElementAt(0))}.Function FunctionExpr",
             "If         : IExpr Condition, IStmt ThenBranch, IStmt? ElseBranch",
             // "Keyword    : Token Name",
             "Print      : IExpr Expression",
@@ -80,16 +81,22 @@ class Program
         CreateVisitorInterface(dir, name, definitions);
     }
 
+    private static string GetBaseNamespace(string dir)
+    {
+        var folderName = Path.GetFileName(dir);
+        var rootName = Path.GetFileName(Path.GetFullPath(Path.Combine(dir, "..")));
+        return $"{rootName}.{folderName}";
+    }
+
     private static void CreateInterface(string dir, string interfaceName)
     {
         var filePath = Path.ChangeExtension(Path.Combine(dir, interfaceName), ".cs");
-        var folderName = Path.GetFileName(dir);
-        var rootName = Path.GetFileName(Path.GetFullPath(Path.Combine(dir, "..")));
+        var baseNamespace = GetBaseNamespace(dir);
         Directory.CreateDirectory(dir);
         var writer = new StreamWriter(File.Open(filePath, FileMode.Create), Encoding.UTF8);
-        writer.WriteLine($"using {rootName}.{folderName}.Visitors;");
+        writer.WriteLine($"using {baseNamespace}.Visitors;");
         writer.WriteLine();
-        writer.WriteLine($"namespace {rootName}.{folderName};");
+        writer.WriteLine($"namespace {baseNamespace};");
         writer.WriteLine();
         writer.WriteLine($"public interface {interfaceName}");
         writer.WriteLine("{");
@@ -106,11 +113,10 @@ class Program
         var visitorName = $"{interfaceName}Visitor";
         var visitorPath = Path.Combine(dir, "Visitors");
         var filePath = Path.ChangeExtension(Path.Combine(visitorPath, visitorName), ".cs");
-        var folderName = Path.GetFileName(dir);
-        var rootName = Path.GetFileName(Path.GetFullPath(Path.Combine(dir, "..")));
+        var baseNamespace = GetBaseNamespace(dir);
         Directory.CreateDirectory(visitorPath);
         var writer = new StreamWriter(File.Open(filePath, FileMode.Create), Encoding.UTF8);
-        writer.WriteLine($"namespace {rootName}.{folderName}.Visitors;");
+        writer.WriteLine($"namespace {baseNamespace}.Visitors;");
         writer.WriteLine();
         writer.WriteLine($"public interface {visitorName}<TReturn>");
         writer.WriteLine("{");
@@ -129,8 +135,7 @@ class Program
         List<string> definitions)
     {
         var filePath = Path.ChangeExtension(Path.Combine(dir, fileName), ".cs");
-        var folderName = Path.GetFileName(dir);
-        var rootName = Path.GetFileName(Path.GetFullPath(Path.Combine(dir, "..")));
+        var baseNamespace = GetBaseNamespace(dir);
         var writer = new StreamWriter(File.Open(filePath, FileMode.Create), Encoding.UTF8);
         if (namespaces is not null)
         {
@@ -140,9 +145,9 @@ class Program
             }
         }
 
-        writer.WriteLine($"using {rootName}.{folderName}.Visitors;");
+        writer.WriteLine($"using {baseNamespace}.Visitors;");
         writer.WriteLine();
-        writer.WriteLine($"namespace {rootName}.{folderName};");
+        writer.WriteLine($"namespace {baseNamespace};");
         writer.WriteLine();
         foreach (var definition in definitions)
         {

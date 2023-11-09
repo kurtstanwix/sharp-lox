@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using SharpLox.Callable;
 using SharpLox.Errors;
+using SharpLox.Expression;
+using SharpLox.Expression.Visitors;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
 using SharpLox.Tokens;
 
-namespace SharpLox.Expression.Visitors;
+namespace SharpLox.Visitors;
 
 public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 {
@@ -130,6 +132,11 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return function.Call(this, arguments);
     }
 
+    public object? VisitFunctionExpr(Expression.Function expr)
+    {
+        return new SharpLoxFunction(null, expr, _environment);
+    }
+
     public object? VisitGroupingExpr(Grouping expr)
     {
         return Evaluate(expr.Expression);
@@ -187,10 +194,10 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
-    public object? VisitFunctionStmt(Function stmt)
+    public object? VisitFunctionStmt(Statement.Function stmt)
     {
-        var function = new SharpLoxFunction(stmt, _environment);
-        _environment.Define(stmt.Name.Lexeme, function);
+        var fnName = stmt.Name.Lexeme;
+        _environment.Define(fnName, new SharpLoxFunction(fnName, stmt.FunctionExpr, _environment));
         return null;
     }
 

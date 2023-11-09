@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SharpLox.Expression;
+using SharpLox.Expression.Visitors;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
 using SharpLox.Tokens;
 
-namespace SharpLox.Expression.Visitors;
+namespace SharpLox.Visitors;
 
 public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
 {
@@ -107,13 +109,14 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return sb.ToString();
     }
 
-    public string VisitFunctionStmt(Function stmt)
+    public string VisitFunctionStmt(Statement.Function stmt)
     {
-        var sb = new StringBuilder();
-        sb.Append($"fun {stmt.Name.Lexeme} ({string.Join(", ", stmt.Params.Select(t => t.Lexeme))})\n");
-        sb = PrintBlock(stmt.Body, sb);
+        return PrintFunctionDefinition(stmt.FunctionExpr, stmt.Name.Lexeme);
+    }
 
-        return sb.ToString();
+    public string VisitFunctionExpr(Expression.Function expr)
+    {
+        return PrintFunctionDefinition(expr);
     }
 
     public string VisitReturnStmt(Return stmt)
@@ -151,6 +154,16 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
     public string VisitPrintStmt(Print stmt)
     {
         return $"PRINT( {stmt.Expression.Accept(this)} );\n";
+    }
+
+    private string PrintFunctionDefinition(Expression.Function functionExpr, string? name = null)
+    {
+        var sb = new StringBuilder();
+        sb.Append(
+            $"fun {(name is null ? "" : $"{name} ")}({string.Join(", ", functionExpr.Params.Select(t => t.Lexeme))})\n");
+        sb = PrintBlock(functionExpr.Body, sb);
+
+        return sb.ToString();
     }
 
     private StringBuilder PrintBlock(IEnumerable<IStmt> statements, StringBuilder sb)

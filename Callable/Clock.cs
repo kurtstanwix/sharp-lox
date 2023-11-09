@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SharpLox.Expression.Visitors;
+using SharpLox.Visitors;
 
 namespace SharpLox.Callable;
 
