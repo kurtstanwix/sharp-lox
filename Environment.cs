@@ -31,6 +31,27 @@ public class Environment
         throw new RuntimeError(name, $"Undefined variable '{name.Lexeme}'.");
     }
 
+    public object? GetAt(int distance, string name)
+    {
+        return Ancestor(distance)?._values.Get(name);
+    }
+
+    private Environment? Ancestor(int distance)
+    {
+        var environment = this;
+        for (var i = 0; i < distance; i++)
+        {
+            environment = environment?._enclosing;
+        }
+
+        return environment;
+    }
+
+    public object? AssignAt(int distance, Token name, object? value)
+    {
+        return Ancestor(distance)!._values[name.Lexeme] = value;
+    }
+
     public void Assign(Token name, object? value)
     {
         if (_values.ContainsKey(name.Lexeme))

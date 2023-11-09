@@ -17,6 +17,8 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     public Environment Globals => _globals;
     private Environment _environment;
 
+    private readonly Dictionary<IExpr, int> _locals = new();
+
     public Interpreter()
     {
         _environment = _globals;
@@ -45,8 +47,8 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         {
             case TokenType.Question:
             {
-                if (IsTruthy(left)) return expr.Middle.Accept(this);
-                return expr.Right.Accept(this);
+                if (IsTruthy(left)) return Evaluate(expr.Middle);
+                return Evaluate(expr.Right);
             }
         }
         return null;
@@ -54,8 +56,17 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     
     public object? VisitAssignExpr(Assign expr)
     {
-        var value = expr.Value.Accept(this);
-        _environment.Assign(expr.Name, value);
+        var value = Evaluate(expr.Value);
+
+        if (_locals.TryGetValue(expr, out var distance))
+        {
+            _environment.AssignAt(distance, expr.Name, value);
+        }
+        else
+        {
+            Globals.Assign(expr.Name, value);
+        }
+
         return value;
     }
     
@@ -178,7 +189,7 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 
     public object? VisitVariableExpr(Variable expr)
     {
-        return _environment.Get(expr.Name);
+        return LookupVariable(expr.Name, expr);
     }
 
     public object? VisitBlockStmt(Block stmt)
@@ -250,6 +261,21 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
             _environment = previousEnv;
         }
 
+    }
+
+    public void Resolve(IExpr expr, int depth)
+    {
+        _locals[expr] = depth;
+    }
+
+    private object? LookupVariable(Token name, IExpr expr)
+    {
+        if (_locals.TryGetValue(expr, out var distance))
+        {
+            return _environment.GetAt(distance, name.Lexeme);
+        }
+
+        return Globals.Get(name);
     }
 
     private object? Evaluate(IExpr? expr)

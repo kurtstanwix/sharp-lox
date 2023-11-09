@@ -88,6 +88,11 @@ class Program
 
         if (_hadError || statements is null) return;
 
+        var resolver = new Resolver(_interpreter);
+        resolver.Resolve(statements);
+        
+        if (_hadError) return;
+
         Console.WriteLine(new AstPrinter().Print(statements));
         _interpreter.Interpret(statements);
     }
