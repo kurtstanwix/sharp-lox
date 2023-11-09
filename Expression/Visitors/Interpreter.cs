@@ -1,4 +1,6 @@
-﻿using SharpLox.Errors;
+﻿using System;
+using System.Collections.Generic;
+using SharpLox.Errors;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
 using SharpLox.Tokens;
@@ -7,7 +9,7 @@ namespace SharpLox.Expression.Visitors;
 
 public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 {
-    private readonly Environment _environment = new();
+    private Environment _environment = new();
     public void Interpret(IEnumerable<IStmt> statements)
     {
         try
@@ -35,6 +37,13 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
             }
         }
         return null;
+    }
+    
+    public object? VisitAssignExpr(Assign expr)
+    {
+        var value = expr.Value.Accept(this);
+        _environment.Assign(expr.Name, value);
+        return value;
     }
     
     public object? VisitBinaryExpr(Binary expr)
@@ -126,6 +135,19 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return _environment.Get(expr.Name);
     }
 
+    public object? VisitBlockStmt(Block stmt)
+    {
+        ExecuteBlock(stmt.Statements, new Environment(_environment));
+        return null;
+    }
+
+    public object? VisitIfStmt(If stmt)
+    {
+        var condition = IsTruthy(Evaluate(stmt.Condition));
+        Execute(condition ? stmt.ThenBranch : stmt.ElseBranch);
+        return null;
+    }
+
     public object? VisitVarStmt(Var stmt)
     {
         var expr = stmt.Initialiser is not null ? Evaluate(stmt.Initialiser) : null;
@@ -146,14 +168,32 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
+    private void ExecuteBlock(IEnumerable<IStmt> statements, Environment environment)
+    {
+        var previousEnv = _environment;
+        try
+        {
+            _environment = environment;
+            foreach (var statement in statements)
+            {
+                Execute(statement);
+            }
+        }
+        finally
+        {
+            _environment = previousEnv;
+        }
+
+    }
+
     private object? Evaluate(IExpr expr)
     {
         return expr.Accept(this);
     }
 
-    private void Execute(IStmt stmt)
+    private void Execute(IStmt? stmt)
     {
-        stmt.Accept(this);
+        stmt?.Accept(this);
     }
 
     private bool IsTruthy(object? obj)

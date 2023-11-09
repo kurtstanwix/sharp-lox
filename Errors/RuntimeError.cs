@@ -1,4 +1,5 @@
-﻿using SharpLox.Tokens;
+﻿using System;
+using SharpLox.Tokens;
 
 namespace SharpLox.Errors;
 

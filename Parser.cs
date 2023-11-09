@@ -1,4 +1,7 @@
-﻿using SharpLox.Expression;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using SharpLox.Expression;
 using SharpLox.Statement;
 using SharpLox.Tokens;
 
@@ -55,15 +58,39 @@ public class Parser
 
     private IStmt Statement()
     {
-        if (Match(TokenType.Print)) return PrintStatement();
+        if (Match(TokenType.Print)) return Print();
+        if (Match(TokenType.LeftBrace)) return new Block { Statements = Block() };
+        if (Match(TokenType.If)) return If();
         return ExpressionStatement();
     }
 
-    private IStmt PrintStatement()
+    private IStmt Print()
     {
         var expr = Expression();
         Consume(TokenType.Semicolon, "Expect ';' after value.");
         return new Print { Expression = expr };
+    }
+
+    private IEnumerable<IStmt> Block()
+    {
+        var statements = new List<IStmt>();
+        while (!Check(TokenType.RightBrace) && !IsAtEnd())
+        {
+            statements.Add(Declaration());
+        }
+
+        Consume(TokenType.RightBrace, "Expect '}' after block.");
+        return statements;
+    }
+
+    private IStmt If()
+    {
+        Consume(TokenType.LeftParen, "Expect '(' after 'if'.");
+        var condition = Expression();
+        Consume(TokenType.RightParen, "Expect ')' after if condition.");
+        var thenBranch = Statement();
+        var elseBranch = Match(TokenType.Else) ? Statement() : null;
+        return new If { Condition = condition, ThenBranch = thenBranch, ElseBranch = elseBranch };
     }
 
     private IStmt ExpressionStatement()
@@ -75,7 +102,7 @@ public class Parser
 
     private IExpr Expression()
     {
-        var expr = Ternary();
+        var expr = TernaryOrAssignment();
 
         if (Match(TokenType.Comma))
         {
@@ -86,7 +113,7 @@ public class Parser
         return expr;
     }
 
-    private IExpr Ternary()
+    private IExpr TernaryOrAssignment()
     {
         var expr = Equality();
 
@@ -95,9 +122,20 @@ public class Parser
             var condOp = Previous();
             var left = Equality();
             var orOp = Consume(TokenType.Colon, "Ternary expression must have false case");
-            var right = Ternary();
+            var right = TernaryOrAssignment();
             expr = new Ternary
                 { Left = expr, LeftOperator = condOp, Middle = left, RightOperator = orOp, Right = right };
+        }
+        else if (Match(TokenType.Equal))
+        {
+            var op = Previous();
+            var value = TernaryOrAssignment();
+            if (expr is Variable varExpr)
+            {
+                return new Assign { Name = varExpr.Name, Value = value };
+            }
+
+            Error(op, "Invalid assignment target.");
         }
 
         return expr;

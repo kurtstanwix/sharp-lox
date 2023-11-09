@@ -1,11 +1,15 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 using SharpLox.Statement;
 using SharpLox.Statement.Visitors;
+using SharpLox.Tokens;
 
 namespace SharpLox.Expression.Visitors;
 
 public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
 {
+    private int _level = 0;
+    
     public string Print(IEnumerable<IStmt> statements)
     {
         var sb = new StringBuilder();
@@ -20,6 +24,11 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
     public string VisitTernaryExpr(Ternary expr)
     {
         return Parenthesize(expr.LeftOperator.Lexeme + expr.RightOperator.Lexeme, expr.Left, expr.Middle, expr.Right);
+    }
+
+    public string VisitAssignExpr(Assign expr)
+    {
+        return Parenthesize("=", expr.Name, expr.Value);
     }
     
     public string VisitBinaryExpr(Binary expr)
@@ -48,6 +57,58 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return expr.Name.Lexeme;
     }
 
+    public string VisitBlockStmt(Block stmt)
+    {
+        var sb = new StringBuilder();
+        try
+        {
+            sb.Append(("{\n"));
+            _level++;
+            foreach (var statement in stmt.Statements)
+            {
+                sb.Append(Prepend(statement.Accept(this)));
+            }
+        }
+        finally
+        {
+            _level--;
+            sb.Append(Prepend("}\n"));
+        }
+
+        return sb.ToString();
+    }
+
+    public string VisitIfStmt(If stmt)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"if ({stmt.Condition.Accept(this)})\n");
+        var thenBranch = stmt.ThenBranch.Accept(this);
+        if (stmt.ThenBranch is not Block)
+        {
+            _level++;
+            thenBranch = Prepend(thenBranch);
+            _level--;
+        }
+
+        sb.Append(thenBranch);
+
+        if (stmt.ElseBranch is not null)
+        {
+            sb.Append("else\n");
+            var elseBranch = stmt.ElseBranch.Accept(this);
+            if (stmt.ElseBranch is not Block)
+            {
+                _level++;
+                elseBranch = Prepend(elseBranch);
+                _level--;
+            }
+
+            sb.Append(elseBranch);
+        }
+
+        return sb.ToString();
+    }
+
     public string VisitVarStmt(Var stmt)
     {
         return $"var {stmt.Name.Lexeme}{(stmt.Initialiser is not null ? $" = {stmt.Initialiser.Accept(this)}" : "")};\n";
@@ -63,19 +124,26 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return $"PRINT( {stmt.Expression.Accept(this)} );\n";
     }
 
-    private string Parenthesize(string name, params IExpr[] exprs)
+    private string Parenthesize(string name, params object[] values)
     {
         var builder = new StringBuilder();
 
         builder.Append("(").Append(name);
-        foreach (var expr in exprs)
+        foreach (var value in values)
         {
             builder.Append(" ");
-            builder.Append(expr.Accept(this));
+            var val = value is IExpr exprValue ? exprValue.Accept(this) :
+                value is Token tokenValue ? tokenValue.Lexeme : value;
+            builder.Append(value);
         }
 
         builder.Append(")");
 
         return builder.ToString();
+    }
+
+    private string Prepend(string value)
+    {
+        return value.PadLeft(value.Length + _level * 2, ' ');
     }
 }

@@ -46,19 +46,22 @@ class Program
         }).ToList();
         DefineAst(outputDir.ElementAt(0), "Expr", namespaces.ElementAtOrDefault(0), new()
         {
-            "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
+            "Assign   : Token Name, IExpr Value",
             "Binary   : IExpr Left, Token Operator, IExpr Right",
             "Grouping : IExpr Expression",
             "Literal  : object Value",
+            "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
             "Unary    : Token Operator, IExpr Right",
-            "Variable : Token Name"
+            "Variable : Token Name",
         });
         
         DefineAst(outputDir.ElementAt(1), "Stmt", namespaces.ElementAtOrDefault(1), new()
         {
-            "Var        : Token Name, IExpr? Initialiser",
+            "Block      : IEnumerable<IStmt> Statements",
             "Expression : IExpr ExpressionValue",
+            "If         : IExpr Condition, IStmt ThenBranch, IStmt? ElseBranch",
             "Print      : IExpr Expression",
+            "Var        : Token Name, IExpr? Initialiser",
         });
     }
 

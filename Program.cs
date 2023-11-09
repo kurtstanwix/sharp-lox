@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using SharpLox.Errors;
 using SharpLox.Expression.Visitors;
 using SharpLox.Tokens;

@@ -6,6 +6,7 @@
         <StartupObject>ExprBuilder.Program</StartupObject>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+        <ImplicitUsings>disable</ImplicitUsings>
     </PropertyGroup>
 
 </Project>
