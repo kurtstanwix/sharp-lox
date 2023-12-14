@@ -29,7 +29,7 @@ public class SharpLoxInstance
         }
         if (_class.FindMethod(name.Lexeme) is { } method)
         {
-            return method;
+            return method.Bind(this);
         }
 
         throw new RuntimeError(name, $"Undefined property '{name.Lexeme}'.");

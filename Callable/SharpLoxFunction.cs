@@ -13,9 +13,11 @@ public class SharpLoxFunction : ISharpLoxCallable
     private readonly string _name;
     private readonly Function _declaration;
     private readonly Environment _closure;
+    private readonly bool _isInitialiser;
 
-    public SharpLoxFunction(string name, Function declaration, Environment closure)
+    public SharpLoxFunction(string name, Function declaration, Environment closure, bool isInitialiser)
     {
+        _isInitialiser = isInitialiser;
         _name = name;
         _declaration = declaration;
         _closure = closure;
@@ -37,10 +39,19 @@ public class SharpLoxFunction : ISharpLoxCallable
         }
         catch (Return ret)
         {
+            if (_isInitialiser) return _closure.GetAt(0, "this");
             return ret.Value;
         }
 
+        if (_isInitialiser) return _closure.GetAt(0, "this");
         return null;
+    }
+
+    public SharpLoxFunction Bind(SharpLoxInstance instance)
+    {
+        var environment = new Environment(_closure);
+        environment.Define("this", instance);
+        return new SharpLoxFunction(_name, _declaration, environment, _isInitialiser);
     }
 
     public override string ToString()

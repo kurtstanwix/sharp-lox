@@ -382,6 +382,8 @@ public class Parser
 
         if (Match(TokenType.Fun)) return FunctionBody("function");
 
+        if (Match(TokenType.This)) return new This { Keyword = Previous() };
+
         if (Match(TokenType.Identifier)) return new Variable { Name = Previous() };
 
         throw Error(Peek(), "Expect expression.");

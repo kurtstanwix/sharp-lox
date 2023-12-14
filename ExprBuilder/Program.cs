@@ -55,6 +55,7 @@ class Program
             "Literal  : object Value",
             "Logical  : IExpr Left, Token Operator, IExpr Right",
             "Set      : IExpr Object, Token Name, IExpr Value",
+            "This     : Token Keyword",
             "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
             "Unary    : Token Operator, IExpr Right",
             "Variable : Token Name",

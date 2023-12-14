@@ -156,7 +156,7 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 
     public object? VisitFunctionExpr(Expression.Function expr)
     {
-        return new SharpLoxFunction(null, expr, _environment);
+        return new SharpLoxFunction(null, expr, _environment, false);
     }
 
     public object? VisitGroupingExpr(Grouping expr)
@@ -198,6 +198,11 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return value;
     }
 
+    public object? VisitThisExpr(This expr)
+    {
+        return LookupVariable(expr.Keyword, expr);
+    }
+
     public object? VisitUnaryExpr(Unary expr)
     {
         var right = Evaluate(expr.Right);
@@ -230,7 +235,8 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         var methods = new Dictionary<string, SharpLoxFunction>();
         foreach (var method in stmt.Methods)
         {
-            var func = new SharpLoxFunction(method.Name.Lexeme, method.FunctionExpr, _environment);
+            var func = new SharpLoxFunction(method.Name.Lexeme, method.FunctionExpr, _environment,
+                method.Name.Lexeme == "init");
             methods[method.Name.Lexeme] = func;
         }
         
@@ -249,7 +255,7 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     public object? VisitFunctionStmt(Statement.Function stmt)
     {
         var fnName = stmt.Name.Lexeme;
-        _environment.Define(fnName, new SharpLoxFunction(fnName, stmt.FunctionExpr, _environment));
+        _environment.Define(fnName, new SharpLoxFunction(fnName, stmt.FunctionExpr, _environment, false));
         return null;
     }
 

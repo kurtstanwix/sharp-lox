@@ -13,12 +13,17 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
 {
     private enum FunctionType
     {
-        None, Function, Method,
+        None, Function, Initialiser, Method,
     }
 
     private enum VariableState
     {
         Declared, Defined, Read,
+    }
+
+    private enum ClassType
+    {
+        None, Class,
     }
 
     private class Variable
@@ -30,6 +35,7 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
     private readonly Interpreter _interpreter;
     private readonly Stack<Dictionary<string, Variable>> _scopes = new();
     private FunctionType _currentFunction = FunctionType.None;
+    private ClassType _currentClass = ClassType.None;
 
     public Resolver(Interpreter interpreter)
     {
@@ -106,6 +112,17 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
+    public object? VisitThisExpr(This expr)
+    {
+        if (_currentClass == ClassType.None)
+        {
+            Program.Error(expr.Keyword, "Can't use 'this' outside of a class.");
+            return null;
+        }
+        ResolveLocal(expr, expr.Keyword, true);
+        return null;
+    }
+
     public object? VisitTernaryExpr(Ternary expr)
     {
         Resolve(expr.Left);
@@ -142,13 +159,28 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
 
     public object? VisitClassStmt(Class stmt)
     {
+        var enclosingClass = _currentClass;
+        _currentClass = ClassType.Class;
+        
         Declare(stmt.Name);
         Define(stmt.Name);
+        
+        BeginScope();
+        var thisVar = new Token { Lexeme = "this" };
+        Declare(thisVar);
+        Define(thisVar);
+        Read(thisVar);
 
         foreach (var method in stmt.Methods)
         {
-            ResolveFunction(method.FunctionExpr, FunctionType.Method);
+            var declaration = FunctionType.Method;
+            if (method.Name.Lexeme == "init") declaration = FunctionType.Initialiser;
+            ResolveFunction(method.FunctionExpr, declaration);
         }
+
+        EndScope();
+
+        _currentClass = enclosingClass;
         return null;
     }
 
@@ -183,7 +215,14 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
     public object? VisitReturnStmt(Return stmt)
     {
         if (_currentFunction == FunctionType.None) Program.Error(stmt.Keyword, "Can't return from top-level code.");
-        Resolve(stmt.Value);
+        if (stmt.Value is not null)
+        {
+            if (_currentFunction == FunctionType.Initialiser)
+                Program.Error(stmt.Keyword, "Can't return a value from an initialiser.");
+
+            Resolve(stmt.Value);
+        }
+
         return null;
     }
 
@@ -229,6 +268,12 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
     {
         if (_scopes.Count == 0) return;
         _scopes.Peek()[name.Lexeme].State = VariableState.Defined;
+    }
+
+    private void Read(Token name)
+    {
+        if (_scopes.Count == 0) return;
+        _scopes.Peek()[name.Lexeme].State = VariableState.Read;
     }
 
     private void ResolveLocal(IExpr expr, Token name, bool isRead)

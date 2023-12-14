@@ -73,6 +73,11 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return Parenthesize("=", $"{obj}.{expr.Name}", expr.Value);
     }
 
+    public string VisitThisExpr(This expr)
+    {
+        return expr.Keyword.Lexeme;
+    }
+
     public string VisitUnaryExpr(Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);

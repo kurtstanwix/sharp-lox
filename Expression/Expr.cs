@@ -106,6 +106,16 @@ public class Set : IExpr
     }
 }
 
+public class This : IExpr
+{
+    public Token Keyword { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitThisExpr(this);
+    }
+}
+
 public class Ternary : IExpr
 {
     public IExpr Left { get; set; }

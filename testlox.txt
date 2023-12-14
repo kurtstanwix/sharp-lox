@@ -1,11 +1,14 @@
-﻿class DevonshireCream {
-    serveOn() {
-        return "Scones";
+﻿class Thing {
+    getCallback() {
+        fun localFunction() {
+            print this;
+        }
+        return localFunction;
     }
 }
-print DevonshireCream; // Prints "DevonshireCream".
-var test = DevonshireCream();
-print test;
-print test.serveOn();
-var funcVar = test.serveOn;
-print funcVar();
+var callback = Thing().getCallback();
+callback();
+fun notAMethod() {
+    print this;
+}
+notAMethod();
