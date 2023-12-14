@@ -3,6 +3,7 @@
 public interface IStmtVisitor<TReturn>
 {
     TReturn VisitBlockStmt(Block stmt);
+    TReturn VisitClassStmt(Class stmt);
     TReturn VisitExpressionStmt(Expression stmt);
     TReturn VisitFunctionStmt(Function stmt);
     TReturn VisitIfStmt(If stmt);

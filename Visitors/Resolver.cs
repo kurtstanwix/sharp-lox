@@ -13,11 +13,22 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
 {
     private enum FunctionType
     {
-        None, Function,
+        None, Function, Method,
+    }
+
+    private enum VariableState
+    {
+        Declared, Defined, Read,
+    }
+
+    private class Variable
+    {
+        public Token Name { get; init; }
+        public VariableState State { get; set; }
     }
     
     private readonly Interpreter _interpreter;
-    private readonly Stack<Dictionary<string, bool>> _scopes = new();
+    private readonly Stack<Dictionary<string, Variable>> _scopes = new();
     private FunctionType _currentFunction = FunctionType.None;
 
     public Resolver(Interpreter interpreter)
@@ -36,7 +47,7 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
     public object? VisitAssignExpr(Assign expr)
     {
         Resolve(expr.Value);
-        ResolveLocal(expr, expr.Name);
+        ResolveLocal(expr, expr.Name, true);
         return null;
     }
 
@@ -55,6 +66,12 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
             Resolve(arg);
         }
 
+        return null;
+    }
+
+    public object? VisitGetExpr(Get expr)
+    {
+        Resolve(expr.Object);
         return null;
     }
 
@@ -82,6 +99,13 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
+    public object? VisitSetExpr(Set expr)
+    {
+        Resolve(expr.Value);
+        Resolve(expr.Object);
+        return null;
+    }
+
     public object? VisitTernaryExpr(Ternary expr)
     {
         Resolve(expr.Left);
@@ -96,14 +120,15 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
         return null;
     }
 
-    public object? VisitVariableExpr(Variable expr)
+    public object? VisitVariableExpr(Expression.Variable expr)
     {
-        if (_scopes.Count != 0 && _scopes.Peek().Get(expr.Name.Lexeme) == false)
+        if (_scopes.Count != 0 && _scopes.Peek().TryGetValue(expr.Name.Lexeme, out var variable) &&
+            variable.State == VariableState.Declared)
         {
             Program.Error(expr.Name, "Can't read local variable in its own initialiser");
         }
 
-        ResolveLocal(expr, expr.Name);
+        ResolveLocal(expr, expr.Name, true);
         return null;
     }
 
@@ -112,6 +137,18 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
         BeginScope();
         Resolve(stmt.Statements);
         EndScope();
+        return null;
+    }
+
+    public object? VisitClassStmt(Class stmt)
+    {
+        Declare(stmt.Name);
+        Define(stmt.Name);
+
+        foreach (var method in stmt.Methods)
+        {
+            ResolveFunction(method.FunctionExpr, FunctionType.Method);
+        }
         return null;
     }
 
@@ -172,7 +209,12 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
 
     private void EndScope()
     {
-        _scopes.Pop();
+        var unusedVars = _scopes.Pop().Where(val => val.Value.State != VariableState.Read);
+
+        foreach (var unusedVar in unusedVars)
+        {
+            Program.Error(unusedVar.Value.Name, "Local variable is not used.");
+        }
     }
 
     private void Declare(Token name)
@@ -180,23 +222,26 @@ public class Resolver : IExprVisitor<object?>, IStmtVisitor<object?>
         if (_scopes.Count == 0) return;
         var scope = _scopes.Peek();
         if (scope.ContainsKey(name.Lexeme)) Program.Error(name, "Already a variable with this name in this scope");
-        scope[name.Lexeme] = false;
+        scope[name.Lexeme] = new Variable { Name = name, State = VariableState.Declared };
     }
 
     private void Define(Token name)
     {
         if (_scopes.Count == 0) return;
-        _scopes.Peek()[name.Lexeme] = true;
+        _scopes.Peek()[name.Lexeme].State = VariableState.Defined;
     }
 
-    private void ResolveLocal(IExpr expr, Token name)
+    private void ResolveLocal(IExpr expr, Token name, bool isRead)
     {
         var hops = 0;
-        foreach (var scope in _scopes.Reverse())
+        foreach (var scope in _scopes)
         {
-            if (scope.ContainsKey(name.Lexeme))
+            if (scope.TryGetValue(name.Lexeme, out var variable))
             {
                 _interpreter.Resolve(expr, hops);
+
+                if (isRead) variable.State = VariableState.Read;
+                
                 return;
             }
 

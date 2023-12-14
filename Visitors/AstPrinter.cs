@@ -45,6 +45,12 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
             $"call {expr.Callee.Accept(this)} ({string.Join(", ", expr.Arguments.Select(arg => arg.Accept(this)))})";
     }
 
+    public string VisitGetExpr(Get expr)
+    {
+        var obj = expr.Object.Accept(this);
+        return $"{obj}.{expr.Name.Lexeme}";
+    }
+
     public string VisitGroupingExpr(Grouping expr)
     {
         return Parenthesize("group", expr.Expression);
@@ -61,6 +67,12 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
         return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
     }
 
+    public string VisitSetExpr(Set expr)
+    {
+        var obj = expr.Object.Accept(this);
+        return Parenthesize("=", $"{obj}.{expr.Name}", expr.Value);
+    }
+
     public string VisitUnaryExpr(Unary expr)
     {
         return Parenthesize(expr.Operator.Lexeme, expr.Right);
@@ -75,6 +87,14 @@ public class AstPrinter : IExprVisitor<string>, IStmtVisitor<string>
     {
         var sb = PrintBlock(stmt.Statements, new StringBuilder());
 
+        return sb.ToString();
+    }
+
+    public string VisitClassStmt(Class stmt)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"class {stmt.Name.Lexeme}\n");
+        sb = PrintBlock(stmt.Methods, sb);
         return sb.ToString();
     }
 

@@ -40,6 +40,17 @@ public class Call : IExpr
     }
 }
 
+public class Get : IExpr
+{
+    public IExpr Object { get; set; }
+    public Token Name { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitGetExpr(this);
+    }
+}
+
 public class Function : IExpr
 {
     public IEnumerable<Token> Params { get; set; }
@@ -80,6 +91,18 @@ public class Logical : IExpr
     public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
     {
         return visitor.VisitLogicalExpr(this);
+    }
+}
+
+public class Set : IExpr
+{
+    public IExpr Object { get; set; }
+    public Token Name { get; set; }
+    public IExpr Value { get; set; }
+
+    public TReturn Accept<TReturn>(IExprVisitor<TReturn> visitor)
+    {
+        return visitor.VisitSetExpr(this);
     }
 }
 

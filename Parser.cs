@@ -4,6 +4,7 @@ using System.Linq;
 using SharpLox.Expression;
 using SharpLox.Statement;
 using SharpLox.Tokens;
+using Function = SharpLox.Statement.Function;
 
 namespace SharpLox;
 
@@ -34,6 +35,7 @@ public class Parser
     {
         try
         {
+            if (Match(TokenType.Class)) return Class();
             if (Check(TokenType.Fun) && CheckNext(TokenType.Identifier))
             {
                 Consume(TokenType.Fun, "");
@@ -49,10 +51,26 @@ public class Parser
         }
     }
 
-    private Statement.Function Function(string kind)
+    private IStmt Class()
+    {
+        var name = Consume(TokenType.Identifier, "Expect class name.");
+        Consume(TokenType.LeftBrace, "Expect '{' before class body.");
+
+        var methods = new List<Function>();
+        while (!Check(TokenType.RightBrace) && !IsAtEnd())
+        {
+            methods.Add(Function("method"));
+        }
+
+        Consume(TokenType.RightBrace, "Expect '}' after class body.");
+
+        return new Class { Name = name, Methods = methods };
+    }
+
+    private Function Function(string kind)
     {
         var name = Consume(TokenType.Identifier, $"Expect {kind} name.");
-        return new Statement.Function { Name = name, FunctionExpr = FunctionBody(kind) };
+        return new Function { Name = name, FunctionExpr = FunctionBody(kind) };
     }
 
     private IStmt VarDeclaration()
@@ -198,6 +216,10 @@ public class Parser
             {
                 return new Assign { Name = varExpr.Name, Value = value };
             }
+            if (expr is Get getExpr)
+            {
+                return new Set { Object = getExpr.Object, Name = getExpr.Name, Value = value };
+            }
 
             Error(op, "Invalid assignment target.");
         }
@@ -307,7 +329,15 @@ public class Parser
 
         while (true)
         {
-            if (Match(TokenType.LeftParen)) expr = FinishCall(expr);
+            if (Match(TokenType.LeftParen))
+            {
+                expr = FinishCall(expr);
+            }
+            else if (Match(TokenType.Dot))
+            {
+                var name = Consume(TokenType.Identifier, "Expect property name after '.'.");
+                expr = new Get { Object = expr, Name = name };
+            }
             else break;
         }
 

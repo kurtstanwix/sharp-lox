@@ -49,10 +49,12 @@ class Program
             "Assign   : Token Name, IExpr Value",
             "Binary   : IExpr Left, Token Operator, IExpr Right",
             "Call     : IExpr Callee, Token Paren, IEnumerable<IExpr> Arguments",
+            "Get      : IExpr Object, Token Name",
             "Function : IEnumerable<Token> Params, IEnumerable<IStmt> Body",
             "Grouping : IExpr Expression",
             "Literal  : object Value",
             "Logical  : IExpr Left, Token Operator, IExpr Right",
+            "Set      : IExpr Object, Token Name, IExpr Value",
             "Ternary  : IExpr Left, Token LeftOperator, IExpr Middle, Token RightOperator, IExpr Right",
             "Unary    : Token Operator, IExpr Right",
             "Variable : Token Name",
@@ -61,6 +63,7 @@ class Program
         DefineAst(outputDir.ElementAt(1), "Stmt", namespaces.ElementAtOrDefault(1), new()
         {
             "Block      : IEnumerable<IStmt> Statements",
+            "Class      : Token Name, IEnumerable<Function> Methods",
             "Expression : IExpr ExpressionValue",
            $"Function   : Token Name, {GetBaseNamespace(outputDir.ElementAt(0))}.Function FunctionExpr",
             "If         : IExpr Condition, IStmt ThenBranch, IStmt? ElseBranch",

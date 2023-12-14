@@ -143,6 +143,17 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
         return function.Call(this, arguments);
     }
 
+    public object? VisitGetExpr(Get expr)
+    {
+        var obj = Evaluate(expr.Object);
+        if (obj is SharpLoxInstance instance)
+        {
+            return instance.Get(expr.Name);
+        }
+
+        throw new RuntimeError(expr.Name, "Only instances have properties.");
+    }
+
     public object? VisitFunctionExpr(Expression.Function expr)
     {
         return new SharpLoxFunction(null, expr, _environment);
@@ -172,6 +183,20 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
 
         return Evaluate(expr.Right);
     }
+    
+    public object? VisitSetExpr(Set expr)
+    {
+        var obj = Evaluate(expr.Object);
+
+        if (obj is not SharpLoxInstance instance)
+        {
+            throw new RuntimeError(expr.Name, "Only instances have fields.");
+        }
+        var value = Evaluate(expr.Value);
+        instance.Set(expr.Name, value);
+
+        return value;
+    }
 
     public object? VisitUnaryExpr(Unary expr)
     {
@@ -195,6 +220,22 @@ public class Interpreter : IExprVisitor<object?>, IStmtVisitor<object?>
     public object? VisitBlockStmt(Block stmt)
     {
         ExecuteBlock(stmt.Statements, new Environment(_environment));
+        return null;
+    }
+
+    public object? VisitClassStmt(Class stmt)
+    {
+        _environment.Define(stmt.Name.Lexeme, null);
+
+        var methods = new Dictionary<string, SharpLoxFunction>();
+        foreach (var method in stmt.Methods)
+        {
+            var func = new SharpLoxFunction(method.Name.Lexeme, method.FunctionExpr, _environment);
+            methods[method.Name.Lexeme] = func;
+        }
+        
+        var klass = new SharpLoxClass { Name = stmt.Name.Lexeme, Methods = methods };
+        _environment.Assign(stmt.Name, klass);
         return null;
     }
 

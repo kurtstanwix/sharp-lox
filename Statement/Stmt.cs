@@ -15,6 +15,17 @@ public class Block : IStmt
     }
 }
 
+public class Class : IStmt
+{
+    public Token Name { get; set; }
+    public IEnumerable<Function> Methods { get; set; }
+
+    public TReturn Accept<TReturn>(IStmtVisitor<TReturn> visitor)
+    {
+        return visitor.VisitClassStmt(this);
+    }
+}
+
 public class Expression : IStmt
 {
     public IExpr ExpressionValue { get; set; }
